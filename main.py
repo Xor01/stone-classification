@@ -1,5 +1,5 @@
 def main():
-    print("Hello from art-classification!")
+    print("Hello from stone-classification!")
 
 
 if __name__ == "__main__":
