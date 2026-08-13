@@ -18,7 +18,7 @@ app/
     stats.py                 GET /api/v1/stats
     model_info.py             GET /api/v1/model
   services/
-    inference.py       MOCK inference — swap for real torch/onnx model
+    inference.py       Real ConvNeXt-Tiny inference, auto-falls back to mock
     prediction_service.py   DB read/write logic
 tests/                 6 passing tests (health, predict, validation, history, stats, DB insert)
 ```
@@ -39,22 +39,38 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
 uv run pytest -q
 ```
 
-## Handoff to the CV teammate
+## Real model integration status
 
-The backend runs today in **mock mode** — `/api/v1/predict` returns random-but-valid
-scores over placeholder classes (`class_a/b/c`) so the frontend and agent can be built
-against a stable contract right now.
+`app/services/inference.py` now implements the **real** ConvNeXt-Tiny stone
+classifier (matching `training/train.py` and `training/evaluate.py` exactly:
+same architecture, same 224x224 + ImageNet-normalization preprocessing, same
+`state_dict`-only loading). It was verified end-to-end with a synthetic
+checkpoint of the identical shape (state_dict loads cleanly, forward pass
+produces valid softmax probabilities, full `/predict` -> DB -> `/predictions`
+flow works over HTTP).
 
-To go live with the real model, only `app/services/inference.py` needs to change:
+**One manual step left:** drop the real trained files in place —
 
-1. Drop `model.pt` at `models/model.pt` and `labels.json` at `models/labels.json`
-   (paths are configurable via `MODEL_PATH` / `LABELS_PATH` env vars).
-2. In `InferenceService._load_model`, load the real model (torch/onnx) instead of
-   returning `None`.
-3. In `InferenceService.predict`, replace the `NotImplementedError` branch with real
-   preprocessing + forward pass, keeping the same `InferenceResult` return shape.
+```
+stone-classification/
+└── models/
+    ├── model.pt       <- the file your CV teammate sent you (~106MB)
+    └── labels.json     <- already included in this delivery, real class names
+```
 
-No other file needs to change — the API, DB schema, and response contract are already final.
+Then locally, set in `backend/.env`:
+```
+MODEL_PATH=../models/model.pt
+LABELS_PATH=../models/labels.json
+```
+
+If `models/model.pt` is missing, the service automatically falls back to mock
+mode (random-but-valid scores) — nothing breaks, it just won't be using the
+real model yet. No code changes needed either way; only the two files.
+
+Also worth getting from the CV teammate: `reports/model_metrics.json`
+(produced by running `training/evaluate.py`) — not required for the API to
+run, but needed for the README/rubric metrics section.
 
 ## Docker
 
