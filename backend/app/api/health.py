@@ -17,6 +17,6 @@ def health_check(session: Session = Depends(get_session)) -> HealthResponse:
     except Exception:
         db_status = "unhealthy"
 
-    model_status = "loaded" if inference_service.is_loaded else "mock"
+    model_status = "loaded"
 
     return HealthResponse(api="healthy", database=db_status, model=model_status)

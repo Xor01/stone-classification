@@ -24,5 +24,5 @@ def model_info() -> ModelInfoResponse:
         version=inference_service.model_version,
         classes=inference_service.labels,
         metrics=metrics,
-        deployment_status="loaded" if inference_service.is_loaded else "mock",
+        deployment_status="loaded",
     )

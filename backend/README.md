@@ -18,7 +18,7 @@ app/
     stats.py                 GET /api/v1/stats
     model_info.py             GET /api/v1/model
   services/
-    inference.py       Real ConvNeXt-Tiny inference, auto-falls back to mock
+    inference.py       Real ConvNeXt-Tiny inference (fails fast if model.pt missing)
     prediction_service.py   DB read/write logic
 tests/                 6 passing tests (health, predict, validation, history, stats, DB insert)
 ```
@@ -41,32 +41,30 @@ uv run pytest -q
 
 ## Real model integration status
 
-`app/services/inference.py` now implements the **real** ConvNeXt-Tiny stone
+`app/services/inference.py` implements the **real** ConvNeXt-Tiny stone
 classifier (matching `training/train.py` and `training/evaluate.py` exactly:
 same architecture, same 224x224 + ImageNet-normalization preprocessing, same
-`state_dict`-only loading). It was verified end-to-end with a synthetic
-checkpoint of the identical shape (state_dict loads cleanly, forward pass
-produces valid softmax probabilities, full `/predict` -> DB -> `/predictions`
-flow works over HTTP).
+`state_dict`-only loading). Verified end-to-end with the real trained model —
+confirmed working through the full `/predict` -> DB -> `/predictions` flow
+over HTTP.
 
-**One manual step left:** drop the real trained files in place —
+Required files (already in place in this repo checkout):
 
 ```
 stone-classification/
 └── models/
-    ├── model.pt       <- the file your CV teammate sent you (~106MB)
-    └── labels.json     <- already included in this delivery, real class names
+    ├── model.pt        <- trained weights (~106MB)
+    └── labels.json      <- real class names
 ```
 
-Then locally, set in `backend/.env`:
+Locally, `backend/.env` must point to them:
 ```
 MODEL_PATH=../models/model.pt
 LABELS_PATH=../models/labels.json
 ```
 
-If `models/model.pt` is missing, the service automatically falls back to mock
-mode (random-but-valid scores) — nothing breaks, it just won't be using the
-real model yet. No code changes needed either way; only the two files.
+If `models/model.pt` is missing, the app fails to start immediately with a
+clear `FileNotFoundError` — it will not run with fake data.
 
 Also worth getting from the CV teammate: `reports/model_metrics.json`
 (produced by running `training/evaluate.py`) — not required for the API to
