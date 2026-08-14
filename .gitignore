@@ -1,3 +1,5 @@
+models/
+_to_delete/
 data/raw/
 training/.venv/
 models/
