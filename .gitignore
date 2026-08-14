@@ -1,0 +1,13 @@
+data/raw/
+training/.venv/
+models/
+
+*.pt
+*.pth
+*.onnx
+
+__pycache__/
+*.py[cod]
+.env
+.vscode/
+.DS_Store
