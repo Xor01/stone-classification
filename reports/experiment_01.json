@@ -1,0 +1,85 @@
+{
+  "experiment_id": "experiment_01",
+  "model": "EfficientNetB0",
+  "strategy": "partial_fine_tuning",
+  "configuration": {
+    "image_size": [
+      224,
+      224
+    ],
+    "batch_size": 16,
+    "optimizer": "Adam",
+    "dropout": 0.3,
+    "epochs_requested": 20,
+    "learning_rate": 0.0001
+  },
+  "result": {
+    "epochs_completed": 12,
+    "best_epoch": 7,
+    "best_val_accuracy": 0.7179,
+    "best_val_loss": 1.1476
+  },
+  "timing": {
+    "training_time_seconds": 1275.2,
+    "average_epoch_time_seconds": 106.3
+  },
+  "history": {
+    "accuracy": [
+      0.4478,
+      0.6802,
+      0.7635,
+      0.8199,
+      0.8657,
+      0.8945,
+      0.9232,
+      0.9371,
+      0.9455,
+      0.9504,
+      0.9555,
+      0.9645
+    ],
+    "loss": [
+      1.6296,
+      0.9849,
+      0.743,
+      0.5703,
+      0.4344,
+      0.3461,
+      0.2669,
+      0.2201,
+      0.1974,
+      0.1627,
+      0.1434,
+      0.121
+    ],
+    "val_accuracy": [
+      0.6239,
+      0.6724,
+      0.7037,
+      0.6866,
+      0.7151,
+      0.7009,
+      0.7179,
+      0.7037,
+      0.7009,
+      0.7066,
+      0.7066,
+      0.6838
+    ],
+    "val_loss": [
+      1.1651,
+      0.9974,
+      0.9504,
+      0.9935,
+      1.0538,
+      1.0864,
+      1.1476,
+      1.2045,
+      1.3067,
+      1.3584,
+      1.3404,
+      1.471
+    ]
+  },
+  "model_path": "C:\\Users\\acer\\Desktop\\AI_Bootcamp2\\Week6\\Day5\\stone-classification\\models\\experiment_01.keras"
+}

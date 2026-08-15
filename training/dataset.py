@@ -1,56 +1,83 @@
 import os
 import pandas as pd
 import numpy as np
-import torch
-from torch.utils.data import Dataset, DataLoader
-from PIL import Image
-
-class RockDataset(Dataset):
-    """Custom PyTorch Dataset for loading rock images and labels from Roboflow CSV."""
-    def __init__(self, split_dir, transform=None):
-        self.split_dir = split_dir
-        self.transform = transform
-        
-        # 1. Load the CSV file containing image filenames and one-hot labels
-        csv_path = os.path.join(split_dir, "_classes.csv")
-        df = pd.read_csv(csv_path)
-        
-        # 2. Extract class names and build full image file paths
-        self.class_names = list(df.columns[1:])
-        self.image_paths = [os.path.join(split_dir, name) for name in df["filename"]]
-        
-        # 3. Convert One-Hot encoded columns into integer class indices
-        one_hot = df.iloc[:, 1:].values
-        self.labels = np.argmax(one_hot, axis=1)
-
-    def __len__(self):
-        # Return total number of images in the dataset
-        return len(self.image_paths)
-
-    def __getitem__(self, idx):
-        # Fetch a single image and convert it to RGB format
-        image = Image.open(self.image_paths[idx]).convert("RGB")
-        label = self.labels[idx]
-
-        # Apply image transformations if provided
-        if self.transform:
-            image = self.transform(image)
-
-        # Return transformed image tensor and label tensor
-        return image, torch.tensor(label, dtype=torch.long)
+import tensorflow as tf
 
 
-def get_dataloaders(data_dir, batch_size=16, train_tf=None, val_tf=None):
-    """Helper function to create Train, Validation, and Test DataLoaders."""
-    # Create RockDataset instances for each split
-    train_ds = RockDataset(os.path.join(data_dir, "train"), transform=train_tf)
-    val_ds   = RockDataset(os.path.join(data_dir, "valid"), transform=val_tf)
-    test_ds  = RockDataset(os.path.join(data_dir, "test"), transform=val_tf)
+def _load_split_info(split_dir):
+    """Read _classes.csv from a Roboflow split directory.
+    
+    Returns:
+        image_paths: list of absolute file paths
+        labels: numpy array of integer class indices
+        class_names: list of class name strings
+    """
+    csv_path = os.path.join(split_dir, "_classes.csv")
+    df = pd.read_csv(csv_path)
 
-    # Wrap Datasets into DataLoaders for batching and shuffling
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True)
-    val_loader   = DataLoader(val_ds, batch_size=batch_size, shuffle=False)
-    test_loader  = DataLoader(test_ds, batch_size=batch_size, shuffle=False)
+    # Extract class names from CSV columns (skip 'filename')
+    class_names = [col.strip() for col in df.columns[1:]]
 
-    return train_loader, val_loader, test_loader, train_ds.class_names
+    # Build full image file paths
+    image_paths = [os.path.join(split_dir, name.strip()) for name in df["filename"]]
 
+    # Convert one-hot encoded columns into integer class indices
+    one_hot = df.iloc[:, 1:].values
+    labels = np.argmax(one_hot, axis=1)
+
+    return image_paths, labels, class_names
+
+
+def _load_and_resize_image(file_path, label, image_size):
+    """Load a JPEG image from disk and resize it."""
+    raw = tf.io.read_file(file_path)
+    image = tf.image.decode_jpeg(raw, channels=3)
+    image = tf.image.resize(image, image_size)
+    # Cast to uint8 for compatibility with Keras preprocessing layers
+    image = tf.cast(image, tf.uint8)
+    return image, label
+
+
+def get_datasets(data_dir, batch_size=16, image_size=(224, 224)):
+    """Create train, validation, and test tf.data.Dataset objects.
+
+    Args:
+        data_dir: Path to the data directory containing train/, valid/, test/ splits.
+        batch_size: Batch size for all datasets.
+        image_size: Tuple (height, width) for resizing images.
+
+    Returns:
+        train_ds: tf.data.Dataset (shuffled, batched, prefetched)
+        val_ds: tf.data.Dataset (batched, prefetched)
+        test_ds: tf.data.Dataset (batched, prefetched)
+        class_names: List of class name strings
+    """
+    # Load split information
+    train_paths, train_labels, class_names = _load_split_info(
+        os.path.join(data_dir, "train")
+    )
+    val_paths, val_labels, _ = _load_split_info(
+        os.path.join(data_dir, "valid")
+    )
+    test_paths, test_labels, _ = _load_split_info(
+        os.path.join(data_dir, "test")
+    )
+
+    # Build tf.data.Dataset for each split
+    def _make_dataset(paths, labels, shuffle=False):
+        ds = tf.data.Dataset.from_tensor_slices((paths, labels))
+        if shuffle:
+            ds = ds.shuffle(buffer_size=len(paths), reshuffle_each_iteration=True)
+        ds = ds.map(
+            lambda p, l: _load_and_resize_image(p, l, image_size),
+            num_parallel_calls=tf.data.AUTOTUNE,
+        )
+        ds = ds.batch(batch_size)
+        ds = ds.prefetch(tf.data.AUTOTUNE)
+        return ds
+
+    train_ds = _make_dataset(train_paths, train_labels, shuffle=True)
+    val_ds = _make_dataset(val_paths, val_labels, shuffle=False)
+    test_ds = _make_dataset(test_paths, test_labels, shuffle=False)
+
+    return train_ds, val_ds, test_ds, class_names
