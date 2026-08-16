@@ -41,9 +41,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
-      - /app/__pycache__
     networks:
       - stone-network
     restart: unless-stopped
