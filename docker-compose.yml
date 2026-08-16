@@ -43,6 +43,8 @@ services:
         condition: service_healthy
     networks:
       - stone-network
+    volumes:
+      - /opt/stone-classification/models:/app/models  
     restart: unless-stopped
 
   # Next.js Frontend
