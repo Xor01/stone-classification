@@ -22,9 +22,7 @@ services:
 
   # FastAPI Backend
   backend:
-    build:
-      context: .
-      dockerfile: ./backend/Dockerfile
+    image: registry.digitalocean.com/air-quality-reg/stone-backend:latest
     container_name: stone-class-backend
     ports:
       - "${BACKEND_PORT}:8000"
@@ -44,14 +42,12 @@ services:
     networks:
       - stone-network
     volumes:
-      - /opt/stone-classification/models:/app/models  
+      - /opt/stone-classification/models:/app/models
     restart: unless-stopped
 
   # Next.js Frontend
   frontend:
-    build:
-      context: ./frontend/stone-classification-openui
-      dockerfile: Dockerfile
+    image: registry.digitalocean.com/air-quality-reg/stone-frontend:latest
     container_name: stone-class-frontend
     ports:
       - "${FRONTEND_PORT}:3000"
