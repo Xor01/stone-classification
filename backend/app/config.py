@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     )
 
     # Model
-    MODEL_PATH: str = "/app/models/model.pt"
-    LABELS_PATH: str = "/app/models/labels.json"
+    MODEL_PATH: str = "../models/model.pt"
+    LABELS_PATH: str = "../models/labels.json"
     MODEL_VERSION: str = "1.0.0"
 
     # CORS
