@@ -22,7 +22,9 @@ services:
 
   # FastAPI Backend
   backend:
-    image: registry.digitalocean.com/air-quality-reg/stone-backend:latest
+    build:
+        context: .
+        dockerfile: ./backend/Dockerfile
     container_name: stone-class-backend
     ports:
       - "${BACKEND_PORT}:8000"
