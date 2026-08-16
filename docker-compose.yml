@@ -34,8 +34,11 @@ services:
       ENV: ${ENV}
       DEBUG: ${DEBUG}
       CORS_ORIGINS: ${CORS_ORIGINS}
-      MODEL_PATH: /app/models/model.pt
-      LABELS_PATH: /app/models/labels.json
+      # Relative to WORKDIR /app; the model ships inside the image at
+      # /app/app/models/. Do NOT mount a host dir over /app/models - an empty
+      # mount there silently shadows the model and crash-loops the container.
+      MODEL_PATH: app/models/model.pt
+      LABELS_PATH: app/models/labels.json
       MODEL_VERSION: ${MODEL_VERSION}
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB}
       ALLOWED_IMAGE_TYPES: ${ALLOWED_IMAGE_TYPES}
@@ -50,8 +53,6 @@ services:
         condition: service_healthy
     networks:
       - stone-network
-    volumes:
-      - /opt/stone-classification/models:/app/models
     restart: unless-stopped
 
   # Next.js Frontend
@@ -69,6 +70,26 @@ services:
       - stone-network
     restart: unless-stopped
 
+  # Pipelines - Open WebUI has NO native Langfuse support. Chats only reach
+  # Langfuse through this service running the official Langfuse filter, which
+  # is auto-installed via PIPELINES_URLS on first start.
+  pipelines:
+    image: ghcr.io/open-webui/pipelines:main
+    container_name: stone-class-pipelines
+    ports:
+      - "${PIPELINES_PORT:-9099}:9099"
+    environment:
+      PIPELINES_API_KEY: ${PIPELINES_API_KEY:-0p3n-w3bu!}
+      PIPELINES_URLS: "https://github.com/open-webui/pipelines/blob/main/examples/filters/langfuse_v3_filter_pipeline.py"
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
+    volumes:
+      - pipelines_data:/app/pipelines
+    networks:
+      - stone-network
+    restart: unless-stopped
+
   # Open WebUI
   openwebui:
     image: ghcr.io/open-webui/open-webui:main
@@ -77,14 +98,18 @@ services:
       - "${OPENWEBUI_PORT}:8080"
     environment:
       WEBUI_AUTH: ${WEBUI_AUTH}
-      OPENAI_API_BASE_URL: ${OPENAI_API_BASE_URL}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      ENABLE_LANGFUSE: "True"
+      # Two OpenAI-compatible connections: OpenAI direct, plus the pipelines
+      # service. The Langfuse filter runs inside pipelines.
+      OPENAI_API_BASE_URLS: "${OPENAI_API_BASE_URL};http://pipelines:9099"
+      OPENAI_API_KEYS: "${OPENAI_API_KEY};${PIPELINES_API_KEY:-0p3n-w3bu!}"
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
       LANGFUSE_HOST: ${LANGFUSE_HOST:-${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}}
       LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://cloud.langfuse.com}}
       BACKEND_URL: ${BACKEND_URL}
+      ENV: ${ENV}
+    depends_on:
+      - pipelines
     volumes:
       - openwebui_data:/app/backend/data
     networks:
@@ -96,6 +121,9 @@ volumes:
     driver: local
 
   openwebui_data:
+    driver: local
+
+  pipelines_data:
     driver: local
 
 networks:

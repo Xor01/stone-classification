@@ -8,6 +8,12 @@ if root_dir not in sys.path:
 
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
 
+# Disable Langfuse for the whole suite. backend/.env holds real project keys, so
+# without this every test run ships traces into the production Langfuse project.
+# Must be set before `app.main` is imported, since that builds the settings.
+os.environ["LANGFUSE_PUBLIC_KEY"] = ""
+os.environ["LANGFUSE_SECRET_KEY"] = ""
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel, create_engine

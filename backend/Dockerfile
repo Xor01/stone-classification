@@ -6,10 +6,10 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
 
+RUN uv sync --frozen --no-dev
+
 COPY backend/app ./app
 COPY agent ./agent
-
-RUN uv sync --frozen --no-dev
 
 EXPOSE 8000
 

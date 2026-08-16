@@ -1,4 +1,6 @@
 import os
+from contextlib import nullcontext
+
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain.agents import create_agent
@@ -72,15 +74,14 @@ def get_langfuse_client():
 
 
 
-def get_langfuse_handler(
-    session_id: str | None = None,
-    user_id: str | None = None,
-    tags: list[str] | None = None,
-    metadata: dict | None = None,
-):
+def get_langfuse_handler():
     """
     Returns a Langfuse CallbackHandler if credentials (LANGFUSE_PUBLIC_KEY & LANGFUSE_SECRET_KEY)
     are present in the environment; otherwise returns None.
+
+    Trace-level attributes (name, session, user, tags) are NOT set here - in the
+    v4 SDK the handler takes no such arguments. They are applied by `run_agent`
+    via `propagate_attributes`.
     """
     client = get_langfuse_client()
     if client is None:
@@ -108,19 +109,32 @@ def run_agent(
 ) -> str:
     """Convenience function to run a natural language query through the agent with Langfuse tracing."""
     config = {}
-    langfuse_handler = get_langfuse_handler(
-        session_id=session_id,
-        user_id=user_id,
-        tags=tags or ["cv-agent-production"],
-        metadata=metadata,
-    )
+    langfuse_handler = get_langfuse_handler()
     if langfuse_handler:
         config["callbacks"] = [langfuse_handler]
 
-    response = agent.invoke(
-        {"messages": [{"role": "user", "content": query}]},
-        config=config if config else None,
-    )
+    # Without this the trace lands as an anonymous "LangGraph" run with no
+    # session/user/tags, which is indistinguishable from tracing being broken.
+    trace_context = nullcontext()
+    if langfuse_handler:
+        from langfuse import propagate_attributes
+
+        # `environment` (not a hardcoded "production" tag) is what keeps dev and
+        # prod traffic separate - the old default tagged local runs as production.
+        trace_context = propagate_attributes(
+            trace_name="cv-agent-chat",
+            session_id=session_id,
+            user_id=user_id,
+            tags=tags or ["cv-agent"],
+            metadata=metadata,
+            environment=os.getenv("ENV", "development"),
+        )
+
+    with trace_context:
+        response = agent.invoke(
+            {"messages": [{"role": "user", "content": query}]},
+            config=config if config else None,
+        )
 
     client = get_langfuse_client()
     if client and hasattr(client, "flush"):
