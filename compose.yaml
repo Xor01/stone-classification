@@ -1,4 +1,3 @@
-
 services:
   # PostgreSQL Database
   db:
@@ -20,6 +19,7 @@ services:
       retries: 5
     networks:
       - stone-network
+    restart: unless-stopped
 
   # FastAPI Backend
   backend:
@@ -44,6 +44,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
+      - ./models:/app/models
       - /app/__pycache__
     networks:
       - stone-network
@@ -56,7 +57,7 @@ services:
       dockerfile: Dockerfile
     container_name: stone-class-frontend
     ports:
-      - "3000:3000"
+    - "3002:3000"
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: http://localhost:8000
@@ -66,9 +67,26 @@ services:
       - stone-network
     restart: unless-stopped
 
+  # Open WebUI Assistant
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: stone-open-webui
+    ports:
+      - "8080:8080"
+    environment:
+      - OPENAI_API_BASE_URL=http://backend:8000/v1
+      - WEBUI_AUTH=False
+    volumes:
+      - open-webui-data:/app/backend/data
+    depends_on:
+      - backend
+    networks:
+      - stone-network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
-    driver: local
+  open-webui-data:
 
 networks:
   stone-network:
