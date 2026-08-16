@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import health, history, model_info, predictions, stats
+from app.api import agent_api, health, history, model_info, predictions, stats
 from app.config import get_settings
 from app.database import init_db
 
@@ -42,6 +42,8 @@ app.include_router(predictions.router)
 app.include_router(history.router)
 app.include_router(stats.router)
 app.include_router(model_info.router)
+app.include_router(agent_api.router)
+
 
 
 # --- Global error handling: never leak tracebacks to clients (section 33) ---

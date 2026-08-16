@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     MAX_UPLOAD_MB: int = 8
     ALLOWED_IMAGE_TYPES: str = "image/jpeg,image/png,image/webp"
 
+    # Langfuse Observability
+    LANGFUSE_PUBLIC_KEY: str | None = None
+    LANGFUSE_SECRET_KEY: str | None = None
+    LANGFUSE_HOST: str = "https://cloud.langfuse.com"
+
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
