@@ -41,7 +41,8 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
-      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}}
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://cloud.langfuse.com}}
       LLM_MODEL: ${LLM_MODEL}
     depends_on:
       db:
@@ -77,6 +78,12 @@ services:
       WEBUI_AUTH: ${WEBUI_AUTH}
       OPENAI_API_BASE_URL: ${OPENAI_API_BASE_URL}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ENABLE_LANGFUSE: "True"
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}}
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://cloud.langfuse.com}}
+      BACKEND_URL: ${BACKEND_URL}
     volumes:
       - openwebui_data:/app/backend/data
     networks:
