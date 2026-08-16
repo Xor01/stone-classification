@@ -23,8 +23,8 @@ services:
   # FastAPI Backend
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./backend/Dockerfile
     container_name: stone-class-backend
     ports:
       - "${BACKEND_PORT}:8000"
