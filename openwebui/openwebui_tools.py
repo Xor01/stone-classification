@@ -1,8 +1,9 @@
 """
 title: CV System Agent Tools
 author: AI Agentic Engineer
-version: 1.4.0
+version: 1.5.0
 description: Tools for Open WebUI to communicate with the deployed Computer Vision FastAPI backend with built-in Langfuse tracing.
+requirements: langfuse>=4.14.4
 """
 
 import base64
@@ -34,27 +35,55 @@ class Tools:
 
     def __init__(self):
         self.valves = self.Valves()
+        self._langfuse = None
 
-    def _log_langfuse(self, tool_name: str, input_data: any, output_data: any):
+    def _get_langfuse(self):
+        """Build (once) the Langfuse client, or return None if unconfigured."""
+        if self._langfuse is not None:
+            return self._langfuse
+
         pub_key = (self.valves.LANGFUSE_PUBLIC_KEY or "").strip("\"' ")
         sec_key = (self.valves.LANGFUSE_SECRET_KEY or "").strip("\"' ")
         host = (self.valves.LANGFUSE_HOST or "https://cloud.langfuse.com").strip("\"' ")
 
         if not pub_key or not sec_key:
-            return
-        try:
-            from langfuse import Langfuse
+            print("[cv-agent-tools] Langfuse keys not set; tracing disabled.")
+            return None
 
-            lf = Langfuse(public_key=pub_key, secret_key=sec_key, host=host)
-            lf.trace(
-                name=f"tool:{tool_name}",
-                input=input_data,
-                output=output_data,
+        from langfuse import Langfuse
+
+        self._langfuse = Langfuse(
+            public_key=pub_key, secret_key=sec_key, host=host
+        )
+        return self._langfuse
+
+    def _log_langfuse(self, tool_name: str, input_data: any, output_data: any):
+        try:
+            lf = self._get_langfuse()
+            if lf is None:
+                return
+
+            from langfuse import propagate_attributes
+
+            # propagate_attributes sets the trace-level name/tags; the tool
+            # observation itself carries the input/output payload.
+            with propagate_attributes(
+                trace_name=f"tool:{tool_name}",
                 tags=["openwebui", "cv-agent-tool"],
-            )
+                environment=os.getenv("ENV", "development"),
+            ):
+                with lf.start_as_current_observation(
+                    name=f"tool:{tool_name}",
+                    as_type="tool",
+                    input=input_data,
+                    output=output_data,
+                ):
+                    pass
             lf.flush()
-        except Exception:
-            pass
+        except Exception as e:
+            # Never fail a tool call because tracing broke, but do not hide it
+            # either - a silent `pass` here masked a total tracing outage.
+            print(f"[cv-agent-tools] Langfuse logging failed: {type(e).__name__}: {e}")
 
     def _get_candidate_urls(self):
         urls = [self.valves.BACKEND_URL]

@@ -170,9 +170,7 @@ def test_get_langfuse_handler_initializes_when_keys_present(monkeypatch):
     ) as mock_cb:
         mock_lf.return_value = MagicMock()
         mock_cb.return_value = MagicMock()
-        handler = agent.agent.get_langfuse_handler(
-            session_id="test-session", user_id="test-user"
-        )
+        handler = agent.agent.get_langfuse_handler()
         assert handler is not None
         mock_lf.assert_called_once_with(
             public_key="pk-lf-test",
@@ -180,5 +178,35 @@ def test_get_langfuse_handler_initializes_when_keys_present(monkeypatch):
             host="https://cloud.langfuse.com",
         )
         mock_cb.assert_called_once()
+
+
+def test_run_agent_propagates_trace_attributes(monkeypatch):
+    """Session/user/tags must reach Langfuse, else traces land as anonymous runs."""
+    monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "pk-lf-test")
+    monkeypatch.setenv("LANGFUSE_SECRET_KEY", "sk-lf-test")
+    import agent.agent
+
+    agent.agent._langfuse_client = None
+
+    mock_msg = MagicMock()
+    mock_msg.content = "done"
+
+    with patch("langfuse.Langfuse"), patch("langfuse.langchain.CallbackHandler"), patch(
+        "langfuse.propagate_attributes"
+    ) as mock_propagate, patch.object(
+        agent.agent.agent, "invoke", return_value={"messages": [mock_msg]}
+    ):
+        agent.agent.run_agent(
+            "hello", session_id="s-1", user_id="u-1", tags=["custom-tag"]
+        )
+
+    mock_propagate.assert_called_once_with(
+        trace_name="cv-agent-chat",
+        session_id="s-1",
+        user_id="u-1",
+        tags=["custom-tag"],
+        metadata=None,
+        environment="development",
+    )
 
 

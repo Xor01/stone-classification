@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from app.api import agent_api, health, history, model_info, predictions, stats
 from app.config import get_settings
 from app.database import init_db
+from app.observability import flush_langfuse
 
 settings = get_settings()
 
@@ -20,6 +21,7 @@ async def lifespan(app: FastAPI):
     init_db()
     logger.info("Database tables ensured. Model version=%s", settings.MODEL_VERSION)
     yield
+    flush_langfuse()
 
 
 app = FastAPI(

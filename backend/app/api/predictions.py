@@ -3,6 +3,7 @@ from sqlmodel import Session
 
 from app.config import get_settings
 from app.database import get_session
+from app.observability import trace_classification
 from app.schemas import PredictionResponse, TopKPrediction
 from app.services.prediction_service import classify_and_store
 
@@ -35,9 +36,16 @@ async def predict(
         raise HTTPException(status_code=400, detail="Empty file upload")
 
     try:
-        prediction = classify_and_store(
-            session, image_bytes=image_bytes, image_name=image.filename or "upload"
-        )
+        # The span wraps the inference so it records real latency, not 0ms.
+        with trace_classification(
+            image_name=image.filename or "upload",
+            content_type=image.content_type,
+            size_bytes=len(image_bytes),
+        ) as trace:
+            prediction = classify_and_store(
+                session, image_bytes=image_bytes, image_name=image.filename or "upload"
+            )
+            trace.record(prediction)
     except NotImplementedError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

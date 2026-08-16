@@ -18,8 +18,10 @@ class Settings(BaseSettings):
     )
 
     # Model
-    MODEL_PATH: str = "../models/model.pt"
-    LABELS_PATH: str = "../models/labels.json"
+    # Relative to the process CWD: `backend/` for local `uvicorn`, `/app` in
+    # the container. Both resolve to the models dir shipped beside the app.
+    MODEL_PATH: str = "app/models/model.pt"
+    LABELS_PATH: str = "app/models/labels.json"
     MODEL_VERSION: str = "1.0.0"
 
     # CORS
