@@ -2,12 +2,6 @@ import json
 import sys
 import numpy as np
 
-if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
-
 import tensorflow as tf
 from tensorflow import keras
 from pathlib import Path
