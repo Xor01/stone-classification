@@ -1,12 +1,8 @@
 data/raw/
 training/.venv/
 models/
-
 *.pt
-*.pth
-*.onnx
 *.keras
-*.h5
 
 __pycache__/
 *.py[cod]
