@@ -1,6 +1,13 @@
 import json
 import sys
 import numpy as np
+
+if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 import tensorflow as tf
 from tensorflow import keras
 from pathlib import Path
@@ -35,7 +42,9 @@ def evaluate(model_path=None):
             raise FileNotFoundError(
                 "❌ No experiment_*.keras files found in models/ directory!"
             )
-        model_path = experiment_01.keras  # Use the latest experiment
+        model_path = MODELS_DIR / "experiment_02.keras"
+        if not model_path.exists():
+            model_path = keras_files[0]
         print(f"   Using model: {model_path.name}")
 
     model_path = Path(model_path)

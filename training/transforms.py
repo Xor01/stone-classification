@@ -47,7 +47,7 @@ def get_preprocessing_fn(model_name):
     """Return the appropriate Keras preprocess_input function for a model.
 
     Args:
-        model_name: One of 'EfficientNetB0', 'ResNet50'.
+        model_name: One of 'EfficientNetB0', 'ResNet50', 'ConvNeXtTiny'.
 
     Returns:
         A callable that preprocesses image tensors for the specified model.
@@ -56,5 +56,7 @@ def get_preprocessing_fn(model_name):
         return tf.keras.applications.efficientnet.preprocess_input
     elif model_name == "ResNet50":
         return tf.keras.applications.resnet50.preprocess_input
+    elif model_name == "ConvNeXtTiny":
+        return tf.keras.applications.convnext.preprocess_input
     else:
         raise ValueError(f"Unknown model name: {model_name}")

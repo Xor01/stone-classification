@@ -6,7 +6,7 @@ def build_model(model_name, num_classes, dropout=0.3, image_size=(224, 224)):
     """Build a transfer learning model with a custom classification head.
 
     Args:
-        model_name: 'EfficientNetB0' or 'ResNet50'.
+        model_name: 'EfficientNetB0', 'ResNet50', or 'ConvNeXtTiny'.
         num_classes: Number of output classes.
         dropout: Dropout rate before the final Dense layer.
         image_size: Tuple (height, width) for input shape.
@@ -25,6 +25,12 @@ def build_model(model_name, num_classes, dropout=0.3, image_size=(224, 224)):
         )
     elif model_name == "ResNet50":
         backbone = keras.applications.ResNet50(
+            weights="imagenet",
+            include_top=False,
+            input_shape=input_shape,
+        )
+    elif model_name == "ConvNeXtTiny":
+        backbone = keras.applications.ConvNeXtTiny(
             weights="imagenet",
             include_top=False,
             input_shape=input_shape,
@@ -58,7 +64,7 @@ def set_trainable_layers(model, num_layers=None):
             - None or 0: keep all frozen
             - negative or >= total layers: unfreeze all
     """
-    backbone = model.layers[1]  # The backbone (EfficientNetB0 or ResNet50)
+    backbone = model.layers[1]  # The backbone (EfficientNetB0, ResNet50, or ConvNeXtTiny)
 
     if num_layers is None or num_layers == 0:
         backbone.trainable = False
