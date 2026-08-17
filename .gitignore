@@ -1,3 +1,5 @@
+models/
+_to_delete/
 data/raw/
 training/.venv/
 models/
@@ -13,3 +15,5 @@ __pycache__/
 .env
 .vscode/
 .DS_Store
+.agents/
+.claude/

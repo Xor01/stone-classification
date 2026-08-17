@@ -1,0 +1,327 @@
+.main {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  overflow-x: hidden;
+  padding: 2rem 1rem;
+}
+
+.waterContainer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ripple1,
+.ripple2,
+.ripple3 {
+  position: absolute;
+  bottom: 25%;
+  left: 50%;
+  width: 120px;
+  height: 120px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  transform: translate(-50%, 0);
+  animation: ripple 3s ease-out infinite;
+}
+
+.ripple2 {
+  animation-delay: 1s;
+}
+
+.ripple3 {
+  animation-delay: 2s;
+}
+
+@keyframes ripple {
+  0% {
+    opacity: 0.8;
+    transform: translate(-50%, 0) scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 0) scale(2.4);
+  }
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 720px;
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+
+.header {
+  text-align: center;
+}
+
+.title {
+  font-size: clamp(2.2rem, 6vw, 3.25rem);
+  letter-spacing: -0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  font-size: 1.05rem;
+  color: var(--color-text-light);
+}
+
+.contentWrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* Upload Dropzone */
+.uploadSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  width: 100%;
+}
+
+.rockContainer {
+  width: 260px;
+  height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.25);
+  border: 2px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  backdrop-filter: blur(12px);
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  color: var(--color-stone);
+  cursor: pointer;
+  outline-offset: 4px;
+}
+
+.rockContainer:hover,
+.rockContainer:focus-visible {
+  background: rgba(255, 255, 255, 0.4);
+  border-color: var(--color-accent);
+  transform: translateY(-4px);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.12);
+}
+
+.rockContainer.dragging {
+  background: rgba(255, 255, 255, 0.55);
+  border-color: var(--color-accent);
+  transform: scale(1.05);
+}
+
+.rockIcon {
+  width: 90px;
+  height: 90px;
+  margin-bottom: 0.75rem;
+  opacity: 0.85;
+}
+
+.uploadPrompt {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-text-dark);
+}
+
+.uploadHelper {
+  font-size: 0.9rem;
+  color: var(--color-text-light);
+}
+
+.hiddenInput {
+  display: none;
+}
+
+/* Results & Preview */
+.resultsSection {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.imageWrapper {
+  width: 240px;
+  height: 240px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.previewImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.actions {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  max-width: 420px;
+}
+
+.buttonPrimary,
+.buttonSecondary {
+  flex: 1;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.buttonPrimary {
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
+.buttonPrimary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+  transform: translateY(-1px);
+}
+
+.buttonPrimary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.buttonSecondary {
+  border: 1.5px solid var(--color-text-dark);
+  color: var(--color-text-dark);
+}
+
+.buttonSecondary:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.errorMessage {
+  width: 100%;
+  padding: 1rem;
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  border-radius: 8px;
+  color: var(--color-error);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.resultCard {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(8px);
+}
+
+.resultList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.resultRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.resultRow:last-child {
+  border-bottom: none;
+}
+
+.resultLabel {
+  font-weight: 500;
+  color: var(--color-text-dark);
+}
+
+.resultValue {
+  font-family: var(--font-mono), monospace;
+  font-weight: 500;
+  color: var(--color-text-dark);
+}
+
+.footer {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+  margin-top: 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+:root {
+  --font-sans: "Segoe UI", Arial, Helvetica, sans-serif;
+  --font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+}
+
+.title,
+.subtitle,
+.uploadPrompt,
+.uploadHelper,
+.buttonPrimary,
+.buttonSecondary,
+.errorMessage,
+.resultLabel,
+.resultValue,
+.footer {
+  font-family: var(--font-sans);
+}
+
+@media (max-width: 600px) {
+  .actions {
+    flex-direction: column-reverse;
+  }
+  .rockContainer {
+    width: 220px;
+    height: 220px;
+  }
+  .imageWrapper {
+    width: 200px;
+    height: 200px;
+  }
+}
+
+

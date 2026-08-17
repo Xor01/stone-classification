@@ -1,0 +1,128 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: stone-class-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - stone-network
+
+  # FastAPI Backend
+  backend:
+    image: registry.digitalocean.com/air-quality-reg/stone-backend:latest
+    container_name: stone-class-backend
+    ports:
+      - "${BACKEND_PORT}:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      ENV: ${ENV}
+      DEBUG: ${DEBUG}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      # Relative to WORKDIR /app; the model ships inside the image at
+      # /app/app/models/. Do NOT mount a host dir over /app/models - an empty
+      # mount there silently shadows the model and crash-loops the container.
+      MODEL_PATH: app/models/model.pt
+      LABELS_PATH: app/models/labels.json
+      MODEL_VERSION: ${MODEL_VERSION}
+      MAX_UPLOAD_MB: ${MAX_UPLOAD_MB}
+      ALLOWED_IMAGE_TYPES: ${ALLOWED_IMAGE_TYPES}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}}
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://cloud.langfuse.com}}
+      LLM_MODEL: ${LLM_MODEL}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - stone-network
+    restart: unless-stopped
+
+  # Next.js Frontend
+  frontend:
+    image: registry.digitalocean.com/air-quality-reg/stone-frontend:latest
+    container_name: stone-class-frontend
+    ports:
+      - "${FRONTEND_PORT}:3000"
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    depends_on:
+      - backend
+    networks:
+      - stone-network
+    restart: unless-stopped
+
+  # Pipelines - Open WebUI has NO native Langfuse support. Chats only reach
+  # Langfuse through this service running the official Langfuse filter, which
+  # is auto-installed via PIPELINES_URLS on first start.
+  pipelines:
+    image: ghcr.io/open-webui/pipelines:main
+    container_name: stone-class-pipelines
+    ports:
+      - "${PIPELINES_PORT:-9099}:9099"
+    environment:
+      PIPELINES_API_KEY: ${PIPELINES_API_KEY:-0p3n-w3bu!}
+      PIPELINES_URLS: "https://github.com/open-webui/pipelines/blob/main/examples/filters/langfuse_v3_filter_pipeline.py"
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
+    volumes:
+      - pipelines_data:/app/pipelines
+    networks:
+      - stone-network
+    restart: unless-stopped
+
+  # Open WebUI
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: stone-class-openwebui
+    ports:
+      - "${OPENWEBUI_PORT}:8080"
+    environment:
+      WEBUI_AUTH: ${WEBUI_AUTH}
+      # Two OpenAI-compatible connections: OpenAI direct, plus the pipelines
+      # service. The Langfuse filter runs inside pipelines.
+      OPENAI_API_BASE_URLS: "${OPENAI_API_BASE_URL};http://pipelines:9099"
+      OPENAI_API_KEYS: "${OPENAI_API_KEY};${PIPELINES_API_KEY:-0p3n-w3bu!}"
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}}
+      LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://cloud.langfuse.com}}
+      BACKEND_URL: ${BACKEND_URL}
+      ENV: ${ENV}
+    depends_on:
+      - pipelines
+    volumes:
+      - openwebui_data:/app/backend/data
+    networks:
+      - stone-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+  openwebui_data:
+    driver: local
+
+  pipelines_data:
+    driver: local
+
+networks:
+  stone-network:
+    driver: bridge
