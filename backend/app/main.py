@@ -5,7 +5,16 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import agent_api, health, history, model_info, predictions, stats
+from app.api import (
+    agent_api,
+    attachments,
+    health,
+    history,
+    model_info,
+    predictions,
+    stats,
+    voice,
+)
 from app.config import get_settings
 from app.database import init_db
 from app.observability import flush_langfuse
@@ -45,6 +54,8 @@ app.include_router(history.router)
 app.include_router(stats.router)
 app.include_router(model_info.router)
 app.include_router(agent_api.router)
+app.include_router(attachments.router)
+app.include_router(voice.router)
 
 
 

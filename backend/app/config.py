@@ -36,6 +36,12 @@ class Settings(BaseSettings):
     LANGFUSE_SECRET_KEY: str | None = None
     LANGFUSE_HOST: str = "https://cloud.langfuse.com"
 
+    # OpenAI (speech)
+    OPENAI_API_KEY: str | None = None
+    STT_MODEL: str = "whisper-1"
+    TTS_MODEL: str = "tts-1"
+    TTS_VOICE: str = "alloy"
+
 
     @property
     def cors_origins_list(self) -> list[str]:

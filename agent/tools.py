@@ -1,4 +1,7 @@
 import os
+import tempfile
+from pathlib import Path
+
 import httpx
 from dotenv import load_dotenv
 from langchain.tools import tool
@@ -6,6 +9,27 @@ from langchain.tools import tool
 load_dotenv()
 
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+
+# Canonical copy of this check lives in backend/app/services/attachments.py
+# (is_allowed_attachment). agent/ must stay importable standalone (e.g.
+# scripts/test_langfuse.py runs it from the repo root where `app` is not on
+# sys.path), so we cannot import that module here — keep the two in sync by hand.
+ATTACHMENT_DIR = Path(
+    os.getenv("ATTACHMENT_DIR") or Path(tempfile.gettempdir()) / "cv-agent-attachments"
+)
+
+
+def _is_allowed_attachment(path: str) -> bool:
+    """True only for an existing regular file directly inside ATTACHMENT_DIR."""
+    try:
+        resolved = Path(path).resolve()
+        base = ATTACHMENT_DIR.resolve()
+    except Exception:
+        return False
+
+    if not resolved.is_file():
+        return False
+    return resolved.parent == base
 
 
 @tool
@@ -65,6 +89,15 @@ def classify_image(image_path: str) -> dict:
         The prediction result including predicted class, confidence,
         top predictions, inference time, and model version.
     """
+    if not _is_allowed_attachment(image_path):
+        return {
+            "error": (
+                "Refused: image_path must be an existing file inside the "
+                "attachment directory. Ask the user to upload the image "
+                "through the chat attachment feature first."
+            )
+        }
+
     with open(image_path, "rb") as image_file:
         response = httpx.post(
             f"{BACKEND_URL}/api/v1/predict",

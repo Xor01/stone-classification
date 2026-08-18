@@ -110,6 +110,51 @@ def trace_classification(*, image_name: str, content_type: str | None, size_byte
         yield _ClassificationTrace(span)
 
 
+class _OperationTrace:
+    """Handle for attaching results to an in-flight generic span."""
+
+    def __init__(self, span):
+        self._span = span
+
+    def record(self, output=None, metadata=None) -> None:
+        if self._span is None:
+            return
+        try:
+            self._span.update(output=output, metadata=metadata)
+        except Exception as e:
+            logger.warning("Langfuse span update failed: %s: %s", type(e).__name__, e)
+
+
+@contextmanager
+def trace_operation(*, name: str, tags: list[str], input=None):
+    """Trace an arbitrary operation as a span. Never raises."""
+    with ExitStack() as stack:
+        span = None
+        try:
+            client = get_langfuse_client()
+            if client is not None:
+                from langfuse import propagate_attributes
+
+                settings = get_settings()
+                stack.enter_context(
+                    propagate_attributes(
+                        trace_name=name,
+                        tags=tags,
+                        environment=settings.ENV,
+                    )
+                )
+                span = stack.enter_context(
+                    client.start_as_current_observation(
+                        name=name, as_type="span", input=input
+                    )
+                )
+        except Exception as e:
+            logger.warning("Langfuse tracing setup failed: %s: %s", type(e).__name__, e)
+            span = None
+
+        yield _OperationTrace(span)
+
+
 def flush_langfuse() -> None:
     """Flush pending traces on shutdown so short-lived containers don't drop them."""
     try:

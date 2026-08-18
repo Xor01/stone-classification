@@ -45,6 +45,13 @@ services:
       LANGFUSE_HOST: ${LANGFUSE_HOST:-${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}}
       LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://cloud.langfuse.com}}
       LLM_MODEL: ${LLM_MODEL}
+      # Voice: Whisper transcription + OpenAI TTS for the in-app chat panel.
+      STT_MODEL: ${STT_MODEL:-whisper-1}
+      TTS_MODEL: ${TTS_MODEL:-tts-1}
+      TTS_VOICE: ${TTS_VOICE:-alloy}
+      # Chat image attachments land here; classify_image only opens paths
+      # inside this directory.
+      ATTACHMENT_DIR: /tmp/cv-agent-attachments
     depends_on:
       db:
         condition: service_healthy
