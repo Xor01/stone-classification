@@ -19,6 +19,7 @@ from agent.tools import (
     get_prediction_statistics,
     tools,
 )
+from app.services.attachments import save_attachment
 
 
 def test_agent_tools_list():
@@ -115,10 +116,10 @@ def test_get_prediction_statistics_tool(mock_get):
 
 
 @patch("httpx.post")
-def test_classify_image_tool(mock_post, tmp_path):
-    # Create a dummy test image
-    test_img = tmp_path / "sample.jpg"
-    test_img.write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 20)
+def test_classify_image_tool(mock_post):
+    # Create a dummy test image inside the attachment directory, since
+    # classify_image now refuses paths outside it.
+    test_img = save_attachment(b"\xff\xd8\xff\xe0" + b"\x00" * 20, "sample.jpg")
 
     mock_resp = MagicMock()
     mock_resp.json.return_value = {
@@ -131,10 +132,25 @@ def test_classify_image_tool(mock_post, tmp_path):
     mock_resp.raise_for_status.return_value = None
     mock_post.return_value = mock_resp
 
-    result = classify_image.invoke({"image_path": str(test_img)})
-    assert result["predicted_class"] == "baroque"
-    assert result["confidence"] == 0.94
-    mock_post.assert_called_once()
+    try:
+        result = classify_image.invoke({"image_path": str(test_img)})
+        assert result["predicted_class"] == "baroque"
+        assert result["confidence"] == 0.94
+        mock_post.assert_called_once()
+    finally:
+        test_img.unlink()
+
+
+@patch("httpx.post")
+def test_classify_image_tool_refuses_path_outside_attachment_dir(mock_post, tmp_path):
+    # A file that genuinely exists on disk, but outside ATTACHMENT_DIR.
+    outside_img = tmp_path / "win.ini"
+    outside_img.write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 20)
+
+    result = classify_image.invoke({"image_path": str(outside_img)})
+
+    assert "error" in result
+    mock_post.assert_not_called()
 
 
 @patch("agent.agent.agent.invoke")

@@ -8,6 +8,7 @@ import React, {
   type ChangeEvent,
   type DragEvent,
 } from "react";
+import AgentChat from "@/components/agent-chat";
 import {
   UploadCloud,
   Image as ImageIcon,
@@ -89,7 +90,6 @@ const formatTimestamp = (iso: string) => {
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-      timeZone: "Asia/Riyadh",
     });
   } catch {
     return iso;
@@ -2188,88 +2188,11 @@ function StatsSkeleton() {
 
 function ChatView() {
   return (
-    <section aria-label="Chat with Open WebUI">
-      <div className="chat-container">
-        <div className="chat-placeholder">
-          <MessageCircle size={48} strokeWidth={1} />
-          <h3>Open WebUI Chat</h3>
-          <p>Open WebUI is initializing. Click the button below to access the chat interface.</p>
-          <button
-            className="open-button"
-            onClick={() => window.open("http://localhost:8080", "_blank")}
-          >
-            Open Chat in New Window
-          </button>
-          <p className="hint">Chat will open at http://localhost:8080</p>
-        </div>
-      </div>
-
-      <style jsx>{`
-        section {
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-        }
-        .chat-container {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 16px;
-          border: 1px solid var(--line);
-          background: var(--card);
-          padding: 40px;
-        }
-        .chat-placeholder {
-          text-align: center;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 16px;
-          color: var(--slate);
-        }
-        .chat-placeholder svg {
-          color: var(--accent);
-          opacity: 0.7;
-        }
-        .chat-placeholder h3 {
-          font-family: var(--font-display);
-          font-weight: 500;
-          font-size: 20px;
-          color: var(--charcoal);
-          margin: 0;
-        }
-        .chat-placeholder p {
-          margin: 0;
-          font-size: 14px;
-          color: var(--slate);
-          max-width: 320px;
-        }
-        .open-button {
-          background: var(--accent);
-          color: white;
-          border: none;
-          border-radius: 10px;
-          padding: 12px 24px;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: background 0.3s ease, transform 0.2s ease;
-          margin-top: 8px;
-        }
-        .open-button:hover {
-          background: var(--cyanotype-deep);
-          transform: translateY(-2px);
-        }
-        .open-button:active {
-          transform: translateY(0);
-        }
-        .hint {
-          font-size: 12px !important;
-          color: var(--mist) !important;
-          margin-top: 8px;
-        }
-      `}</style>
+    <section
+      aria-label="Chat with the CV agent"
+      style={{ height: "100%", display: "flex", flexDirection: "column" }}
+    >
+      <AgentChat apiBase={API_BASE} />
     </section>
   );
 }

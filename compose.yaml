@@ -24,8 +24,11 @@ services:
   # FastAPI Backend
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      # Root context: backend/Dockerfile copies `backend/app` AND `agent`, and
+      # needs the ROOT pyproject.toml/uv.lock (which carry the CPU-only torch
+      # pins). Building from ./backend cannot see either.
+      context: .
+      dockerfile: ./backend/Dockerfile
     container_name: stone-class-backend
     ports:
       - "${BACKEND_PORT:-8000}:8000"
@@ -45,13 +48,19 @@ services:
       LANGFUSE_HOST: ${LANGFUSE_HOST:-${LANGFUSE_BASE_URL:-https://cloud.langfuse.com}}
       LANGFUSE_BASE_URL: ${LANGFUSE_BASE_URL:-${LANGFUSE_HOST:-https://cloud.langfuse.com}}
       LLM_MODEL: ${LLM_MODEL}
+      # Voice: Whisper transcription + OpenAI TTS for the in-app chat panel.
+      STT_MODEL: ${STT_MODEL:-whisper-1}
+      TTS_MODEL: ${TTS_MODEL:-tts-1}
+      TTS_VOICE: ${TTS_VOICE:-alloy}
+      # Chat image attachments land here; classify_image only opens paths
+      # inside this directory.
+      ATTACHMENT_DIR: /tmp/cv-agent-attachments
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
-      - ./models:/app/models
-      - /app/__pycache__
+    # No bind mounts: `./backend:/app` would shadow /app/agent and /app/.venv
+    # from the image, breaking `import agent` and `uv run uvicorn` at startup.
+    # The model ships inside the image at /app/app/models/.
     networks:
       - stone-network
     restart: unless-stopped
